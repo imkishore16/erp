@@ -1,0 +1,178 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  role      Role     @default(user)
+  avatar    String?
+  posts     Post[]
+  createdAt DateTime @default(now()) @db.Timestamp(3)
+  updatedAt DateTime @updatedAt @db.Timestamp(3)
+}
+
+model Post {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  image     String
+  user      User?    @relation(fields: [user_id], references: [id])
+  user_id   String?
+  createdAt DateTime @default(now()) @db.Timestamp(3)
+  updatedAt DateTime @updatedAt @db.Timestamp(3)
+}
+
+enum Role {
+  user
+  admin
+}
+
+model State {
+  id        String   @id @default(uuid())
+  name    String 
+}
+
+model Customer {
+  id        String   @id @default(uuid())
+  name    String 
+  enquiries      EnquiryRegister[] 
+}
+
+model Scope {
+  id        String   @id @default(uuid())
+  name    String 
+  enquiries      ItemDetails[] 
+
+}
+
+model Category {
+  id        String   @id @default(uuid())
+  name    String 
+  enquiries ItemDetails[]
+}
+
+model Material {
+  id   String @id @default(uuid())
+  name String @unique
+  enquiries ItemDetailsMaterial[]
+}
+
+
+model EnquiryRegister {
+  id        String   @id @default(uuid())
+  date      DateTime
+  month     Month
+  
+  customer    Customer  @relation(fields: [customerId], references: [id])
+  customerId  String
+
+  
+
+  EnquiryReference String
+
+  customer_type CustomerType
+  MFG Boolean @default(true)
+  TEC Boolean @default(true)
+  COM Boolean @default(true)
+  SLNO Boolean @default(true)
+  special_process Boolean
+
+  status Status
+
+  quotation   Quotation?
+
+}
+
+model ItemDetails {
+  id        String   @id @default(uuid())
+
+  description String
+  drawingNumber String[]
+
+  materials         ItemDetailsMaterial[]
+  scope Scope @relation(fields: [scopeId],references: [id])
+  scopeId String
+
+  categoryId String
+  category Category @relation(fields: [categoryId],references: [id])
+
+  quantity Int
+}
+
+model Quotation {
+  id             String          @id @default(uuid())
+
+  quotationNo    String          @unique
+  quotationDate  DateTime      
+  enquiryId      String          @unique
+  enquiry        EnquiryRegister @relation(fields: [enquiryId], references: [id])
+  description    String          // Derived from EnquiryRegister
+  drawingNumber  String[]        // Derived from EnquiryRegister
+  material       String          // Derived from EnquiryRegister
+  scope          String          // Derived from EnquiryRegister
+  category       String          // Derived from EnquiryRegister
+  enquiryQty     Int             // Derived from EnquiryRegister
+  EnquiryReference String          // Derived from EnquiryRegister
+  
+  costPerEach    Float           
+  totalCost    Float        // to tal cost for this quotation = totalCost * quantity   
+  createdAt      DateTime        @default(now())
+  remarks        String
+}
+
+
+model PurchaseOrderRegister{
+  id        String   @id @default(uuid())
+
+}
+
+model ProcessPlan{
+  id        String   @id @default(uuid())
+}
+
+
+
+enum Month {
+  January 
+  February
+  March
+  April
+  May
+  June 
+  July 
+  August 
+  September
+  October 
+  November 
+  December 
+}
+
+enum Status {
+  Active
+  Compeleted
+}
+
+enum CustomerType {
+  New
+  Old
+}
+
+
+
+model ItemDetailsMaterial {
+  id                String              @id @default(uuid())
+  itemDetails   ItemDetails     @relation(fields: [itemDetailsId], references: [id])
+  itemDetailsId String
+  material          Material            @relation(fields: [materialId], references: [id])
+  materialId        String
+  @@unique([itemDetailsId, materialId]) 
+}
