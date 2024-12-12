@@ -50,14 +50,14 @@ model Customer {
 model Scope {
   id        String   @id @default(uuid())
   name    String 
-  enquiries      ItemDetails[] 
+  enquiries      EnquiryItem[] 
 
 }
 
 model Category {
   id        String   @id @default(uuid())
   name    String 
-  enquiries ItemDetails[]
+  enquiries EnquiryItem[]
 }
 
 model Material {
@@ -69,17 +69,35 @@ model Material {
 
 model EnquiryRegister {
   id        String   @id @default(uuid())
-  date      DateTime
-  month     Month
   
   customer    Customer  @relation(fields: [customerId], references: [id])
   customerId  String
 
+  enquiryItems EnquiryItem[]
   
-
   EnquiryReference String
 
   customer_type CustomerType
+
+  // quotation   Quotation?
+
+}
+
+model EnquiryItem {
+  id        String   @id @default(uuid())
+  date      DateTime
+  month     Month
+  description String
+  drawingNumber String[]
+  materials         ItemDetailsMaterial[]
+  scope Scope @relation(fields: [scopeId],references: [id])
+  scopeId String
+  categoryId String
+  category Category @relation(fields: [categoryId],references: [id])
+  quantity Int
+  enquiryId String
+  enquiryItems EnquiryRegister @relation(fields: [enquiryId],references: [id])
+
   MFG Boolean @default(true)
   TEC Boolean @default(true)
   COM Boolean @default(true)
@@ -88,47 +106,38 @@ model EnquiryRegister {
 
   status Status
 
-  quotation   Quotation?
-
-}
-
-model ItemDetails {
-  id        String   @id @default(uuid())
-
-  description String
-  drawingNumber String[]
-
-  materials         ItemDetailsMaterial[]
-  scope Scope @relation(fields: [scopeId],references: [id])
-  scopeId String
-
-  categoryId String
-  category Category @relation(fields: [categoryId],references: [id])
-
-  quantity Int
+  quotationItem QuotationItem? @relation(name: "EnquiryItemToQuotationItem")
 }
 
 model Quotation {
+  id             String          @id @default(uuid()) //quotationNo
+  quotationItems QuotationItem[]
+  
+}
+
+model QuotationItem {
   id             String          @id @default(uuid())
 
-  quotationNo    String          @unique
-  quotationDate  DateTime      
-  enquiryId      String          @unique
-  enquiry        EnquiryRegister @relation(fields: [enquiryId], references: [id])
-  description    String          // Derived from EnquiryRegister
-  drawingNumber  String[]        // Derived from EnquiryRegister
-  material       String          // Derived from EnquiryRegister
-  scope          String          // Derived from EnquiryRegister
-  category       String          // Derived from EnquiryRegister
-  enquiryQty     Int             // Derived from EnquiryRegister
-  EnquiryReference String          // Derived from EnquiryRegister
-  
-  costPerEach    Float           
-  totalCost    Float        // to tal cost for this quotation = totalCost * quantity   
+  quotationId String
+  quotation Quotation @relation(fields: [quotationId]  ,references: [id])
+  quotationDate  DateTime
+
+  enquiryItemId      String          @unique
+  enquiryItem      EnquiryItem @relation(fields: [enquiryItemId], references: [id], name: "EnquiryItemToQuotationItem")
+
+  // description    String          // Derived from EnquiryRegister
+  // drawingNumber  String[]        // Derived from EnquiryRegister
+  // material       String          // Derived from EnquiryRegister
+  // scope          String          // Derived from EnquiryRegister
+  // category       String          // Derived from EnquiryRegister
+  // enquiryQty     Int             // Derived from EnquiryRegister
+  // EnquiryReference String          // Derived from EnquiryRegister
+
+  costPerEach    Float
+  totalCost    Float        // total cost for this quotation = totalCost * quantity
   createdAt      DateTime        @default(now())
   remarks        String
 }
-
 
 model PurchaseOrderRegister{
   id        String   @id @default(uuid())
@@ -170,9 +179,9 @@ enum CustomerType {
 
 model ItemDetailsMaterial {
   id                String              @id @default(uuid())
-  itemDetails   ItemDetails     @relation(fields: [itemDetailsId], references: [id])
-  itemDetailsId String
+  enquiryItem   EnquiryItem     @relation(fields: [enquiryItemId], references: [id])
+  enquiryItemId String
   material          Material            @relation(fields: [materialId], references: [id])
   materialId        String
-  @@unique([itemDetailsId, materialId]) 
+  @@unique([enquiryItemId, materialId]) 
 }
