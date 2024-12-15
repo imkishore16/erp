@@ -7,26 +7,17 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
+  url      =  env("DATABASE_URL")
+  
 }
 
 model User {
   id        String   @id @default(uuid())
-  name      String
+  name      String?
   email     String   @unique
+  password  String
   role      Role     @default(user)
   avatar    String?
-  posts     Post[]
-  createdAt DateTime @default(now()) @db.Timestamp(3)
-  updatedAt DateTime @updatedAt @db.Timestamp(3)
-}
-
-model Post {
-  id        String   @id @default(uuid())
-  name      String   @unique
-  image     String
-  user      User?    @relation(fields: [user_id], references: [id])
-  user_id   String?
   createdAt DateTime @default(now()) @db.Timestamp(3)
   updatedAt DateTime @updatedAt @db.Timestamp(3)
 }
@@ -79,14 +70,13 @@ model EnquiryRegister {
 
   customer_type CustomerType
 
-  // quotation   Quotation?
+  quotation   Quotation? 
 
 }
 
 model EnquiryItem {
   id        String   @id @default(uuid())
   date      DateTime
-  month     Month
   description String
   drawingNumber String[]
   materials         ItemDetailsMaterial[]
@@ -112,6 +102,9 @@ model EnquiryItem {
 model Quotation {
   id             String          @id @default(uuid()) //quotationNo
   quotationItems QuotationItem[]
+
+  enquiryId String @unique
+  enquiry EnquiryRegister @relation(fields: [enquiryId], references: [id]) 
   
 }
 
@@ -133,37 +126,72 @@ model QuotationItem {
   // enquiryQty     Int             // Derived from EnquiryRegister
   // EnquiryReference String          // Derived from EnquiryRegister
 
+  quantity Int
   costPerEach    Float
   totalCost    Float        // total cost for this quotation = totalCost * quantity
   createdAt      DateTime        @default(now())
   remarks        String
+
+  purchaseOrderItem PurchaseOrderItem? @relation(name: "QuotationItemToPurchaseOrderItem")
+
 }
 
+// the user will add rows to PO register once the quotation is accpted by the user
 model PurchaseOrderRegister{
-  id        String   @id @default(uuid())
+  id        String   @id //@default(uuid())
+  confirmationDate DateTime @db.Timestamp(3)
+
+  purchaseOrderItem PurchaseOrderItem[]
+
+  
 
 }
 
-model ProcessPlan{
-  id        String   @id @default(uuid())
+model PurchaseOrderItem {
+  id        String   @id //@default(uuid())
+  purchaseOrderId String
+  purchaseOrder PurchaseOrderRegister @relation(fields: [purchaseOrderId] , references: [id])
+
+  quotationItemId      String          @unique
+  quotationItem      QuotationItem   @relation(fields: [quotationItemId], references: [id], name: "QuotationItemToPurchaseOrderItem")
+
+  discount Float
+  discountedValue Float 
+  tfterDiscount Float
+  vat Float
+  totalCostEach Float//(Vat Including)
+  totalPOValue Float // quantity x totalCostEact 
+  DispatchSchedule DateTime // edlivery date
+  InvoiceNo String
+  BalanceDeliveryQty Int
+  BalanceInvoiceQty Int
+  BalanceValue Int
+
 }
 
 
+// LIST OF DRAWINGS 2024 -2025
+model ProcessPlanRegister{
+  id        String   @id @default(uuid())  //Process Plan No 
 
-enum Month {
-  January 
-  February
-  March
-  April
-  May
-  June 
-  July 
-  August 
-  September
-  October 
-  November 
-  December 
+  //data from purchaseOrderItem
 }
+
+
+// enum Month {
+//   January 
+//   February
+//   March
+//   April
+//   May
+//   June 
+//   July 
+//   August 
+//   September
+//   October 
+//   November 
+//   December 
+// }
 
 enum Status {
   Active
